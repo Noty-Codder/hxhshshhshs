@@ -1,40 +1,99 @@
-/*
-  * IstkharMusic - Telegram Music Bot (by TEAM-ISTKHAR)
- *  Copyright (c) 2025-2026 Ashok Shau
- *
- *  Licensed under GNU GPL v3
- *  See https://github.com/TEAM-ISTKHAR/IstkharMusic
- */
-
 package calls
 
 import (
-	"istkharmusic/internal/config"
-	"istkharmusic/internal/utils"
 	"fmt"
+	"html"
+	"time"
+
+	"istkharmusic/internal/config"
+	"istkharmusic/internal/db"
+	"istkharmusic/internal/utils"
 
 	td "github.com/AshokShau/gotdbot"
 )
 
+func istNow() string {
+	loc := time.FixedZone("IST", 5*3600+30*60)
+	return time.Now().In(loc).Format("02 Jan 2006 • 15:04")
+}
+
+func chatTitle(client *td.Client, chatID int64) string {
+	if ch, err := client.GetChat(chatID); err == nil && ch != nil && ch.Title != "" {
+		return html.EscapeString(ch.Title)
+	}
+	return "Unknown Group"
+}
+
 func sendLogger(client *td.Client, chatID int64, song *utils.PlayerCache) {
-	if chatID == 0 || song == nil || chatID == config.LoggerId {
+	if chatID == 0 || song == nil || config.LoggerId == 0 || chatID == config.LoggerId {
+		return
+	}
+	if !db.Instance.GetLoggerStatus() {
 		return
 	}
 
+	title := html.EscapeString(song.Name)
+	if song.URL != "" {
+		title = fmt.Sprintf("<a href='%s'>%s</a>", html.EscapeString(song.URL), title)
+	}
+
 	text := fmt.Sprintf(
-		"<b>A song is playing</b> in <code>%d</code>\n\n‣ <b>Title:</b> <a href='%s'>%s</a>\n‣ <b>Duration:</b> %s\n‣ <b>Requested by:</b> %s\n‣ <b>Platform:</b> %s\n‣ <b>Is Video:</b> %t",
-		chatID,
-		song.URL,
-		song.Name,
-		utils.SecToMin(song.Duration),
-		song.User,
-		song.Platform,
-		song.IsVideo,
+		"🎧 <b>%s • #PLAYBACK_STARTED</b>\n\n"+
+			"<blockquote>🎵 <b>%s:</b> %s\n"+
+			"⏱ <b>%s:</b> %s\n"+
+			"📡 <b>%s:</b> %s\n"+
+			"👥 <b>%s:</b> %s (<code>%d</code>)\n"+
+			"👤 <b>%s:</b> %s\n"+
+			"🗓 <b>%s:</b> %s</blockquote>",
+		utils.SC("playback started"),
+		utils.SC("track"), title,
+		utils.SC("duration"), utils.SecToMin(song.Duration),
+		utils.SC("source"), html.EscapeString(song.Platform),
+		utils.SC("group"), chatTitle(client, chatID), chatID,
+		utils.SC("requested by"), html.EscapeString(song.User),
+		utils.SC("time"), istNow(),
 	)
 
-	_, err := client.SendMessage(config.LoggerId, text, &td.SendMessageOpts{DisableWebPagePreview: true, ParseMode: "HTML"})
+	_, err := client.SendMessage(config.LoggerId, text, &td.SendMessageOpts{
+		DisableWebPagePreview: true,
+		ParseMode:             "HTML",
+	})
 	if err != nil {
-		logger.Warn("Failed to send the message", "error", err)
+		logger.Warn("Failed to send playback start log", "error", err)
+	}
+}
+
+// SendQueueLog logs #PLAYBACK_QUEUED when a song is added to queue.
+func SendQueueLog(client *td.Client, chatID int64, song *utils.PlayerCache) {
+	if chatID == 0 || song == nil || config.LoggerId == 0 || chatID == config.LoggerId {
+		return
+	}
+	if !db.Instance.GetLoggerStatus() {
+		return
+	}
+
+	title := html.EscapeString(song.Name)
+	if song.URL != "" {
+		title = fmt.Sprintf("<a href='%s'>%s</a>", html.EscapeString(song.URL), title)
+	}
+
+	text := fmt.Sprintf(
+		"📥 <b>%s • #PLAYBACK_QUEUED</b>\n\n"+
+			"<blockquote>🎵 <b>%s:</b> %s\n"+
+			"👥 <b>%s:</b> %s (<code>%d</code>)\n"+
+			"👤 <b>%s:</b> %s</blockquote>",
+		utils.SC("playback queued"),
+		utils.SC("track"), title,
+		utils.SC("group"), chatTitle(client, chatID), chatID,
+		utils.SC("requested by"), html.EscapeString(song.User),
+	)
+
+	_, err := client.SendMessage(config.LoggerId, text, &td.SendMessageOpts{
+		DisableWebPagePreview: true,
+		ParseMode:             "HTML",
+	})
+	if err != nil {
+		logger.Warn("Failed to send queue log", "error", err)
 	}
 }
 
