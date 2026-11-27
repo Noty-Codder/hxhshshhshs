@@ -39,7 +39,7 @@ func SendPanel(c *td.Client, anchor *td.Message, song *utils.PlayerCache, explic
 	}
 
 	status := utils.SC("streaming started | enjoy music")
-	markup := utils.PanelButtons("play", 0, song.Duration, max(cache.ChatCache.GetQueueLength(anchor.ChatId)-1, 0), cache.ChatCache.GetAutoplay(anchor.ChatId))
+	markup := utils.PanelButtons("play", 0, song.Duration, cache.ChatCache.GetAutoplay(anchor.ChatId))
 	rich := &td.InputRichMessage{Source: &td.RichMessageSourceHtml{Text: utils.NowPlayingHTML(song, status, "")}}
 
 	msg, err := anchor.ReplyRichMessage(c, rich, &td.SendMessageOpts{ReplyMarkup: markup})
