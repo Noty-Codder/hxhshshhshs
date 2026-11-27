@@ -1,6 +1,10 @@
 package utils
 
-import "fmt"
+import (
+	"fmt"
+
+	td "github.com/AshokShau/gotdbot"
+)
 
 type InlineButtonSpec struct {
 	Text         string
@@ -14,10 +18,15 @@ func PlayPanelButtons(chatID int64, played, total, bar string, autoplayOn bool) 
 		autoplayText = "ᴀᴜᴛᴏᴘʟᴀʏ: ᴏɴ"
 	}
 
+	timerLabel := fmt.Sprintf("%s %s %s", played, bar, total)
+	if bar == "" {
+		timerLabel = fmt.Sprintf("%s / %s", played, total)
+	}
+
 	return [][]InlineButtonSpec{
 		{
 			{
-				Text:         fmt.Sprintf("%s %s %s", played, bar, total),
+				Text:         timerLabel,
 				CallbackData: "get_timer",
 				Style:        "primary",
 			},
@@ -59,4 +68,21 @@ func PlayPanelButtons(chatID int64, played, total, bar string, autoplayOn bool) 
 			},
 		},
 	}
+}
+
+func ToGotdbotKeyboard(rows [][]InlineButtonSpec) *td.ReplyMarkupInlineKeyboard {
+	kbRows := make([][]td.InlineKeyboardButton, 0, len(rows))
+	for _, row := range rows {
+		kbRow := make([]td.InlineKeyboardButton, 0, len(row))
+		for _, btn := range row {
+			kbRow = append(kbRow, td.InlineKeyboardButton{
+				Text: btn.Text,
+				Type: &td.InlineKeyboardButtonTypeCallback{
+					Data: []byte(btn.CallbackData),
+				},
+			})
+		}
+		kbRows = append(kbRows, kbRow)
+	}
+	return &td.ReplyMarkupInlineKeyboard{Rows: kbRows}
 }
