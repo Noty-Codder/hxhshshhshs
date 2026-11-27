@@ -1,18 +1,18 @@
 /*
-  * IstkharMusic - Telegram Music Bot (by TEAM-ISTKHAR)
- *  Copyright (c) 2025-2026 Ashok Shau
+ * IstkharMusic - Telegram Music Bot (by TEAM-ISTKHAR)
+ * Copyright (c) 2025-2026 Ashok Shau
  *
- *  Licensed under GNU GPL v3
- *  See https://github.com/TEAM-ISTKHAR/IstkharMusic
+ * Licensed under GNU GPL v3
+ * See https://github.com/TEAM-ISTKHAR/IstkharMusic
  */
 
 package db
 
 import (
-	"istkharmusic/internal/cache"
-	"istkharmusic/internal/config"
 	"context"
 	"fmt"
+	"istkharmusic/internal/cache"
+	"istkharmusic/internal/config"
 	"log/slog"
 	"strconv"
 	"time"
@@ -20,6 +20,8 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
+
+const defaultDBName = "anon"
 
 // Database encapsulates the MongoDB connection, database, collections, and caches.
 type Database struct {
@@ -62,7 +64,12 @@ func InitDatabase() error {
 		return err
 	}
 
-	db := client.Database(config.DbName)
+	dbName := config.DbName
+	if dbName == "" {
+		dbName = defaultDBName
+	}
+
+	db := client.Database(dbName)
 	Instance = &Database{
 		client:      client,
 		DB:          db,
