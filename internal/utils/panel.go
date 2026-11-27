@@ -6,47 +6,39 @@ import (
 	"math/rand/v2"
 	"strings"
 
-	"istkharmusic/internal/config"
-
-	"github.com/AshokShau/gotdbot"
+	td "github.com/AshokShau/gotdbot"
 )
 
-func url(text, link string, style gotdbot.ButtonStyle) gotdbot.InlineKeyboardButton {
-	return gotdbot.InlineKeyboardButton{
+func urlBtn(text, link string) td.InlineKeyboardButton {
+	return td.InlineKeyboardButton{
 		Text: text,
-		Type: &gotdbot.InlineKeyboardButtonTypeUrl{
+		Type: &td.InlineKeyboardButtonTypeUrl{
 			Url: link,
 		},
-		Style: style,
 	}
 }
 
-func cb(text, data string, style gotdbot.ButtonStyle) gotdbot.InlineKeyboardButton {
-	return gotdbot.InlineKeyboardButton{
+func cbBtn(text, data string) td.InlineKeyboardButton {
+	return td.InlineKeyboardButton{
 		Text: text,
-		Type: &gotdbot.InlineKeyboardButtonTypeCallback{
+		Type: &td.InlineKeyboardButtonTypeCallback{
 			Data: []byte(data),
 		},
-		Style: style,
 	}
 }
 
 // URLButton builds a URL inline button.
-func URLButton(text, link string) gotdbot.InlineKeyboardButton {
-	return url(text, link, gotdbot.ButtonStylePrimary{})
+func URLButton(text, link string) td.InlineKeyboardButton {
+	return urlBtn(text, link)
 }
 
-// CBButton builds a callback inline button with the given style.
-func CBButton(text, data string, style gotdbot.ButtonStyle) gotdbot.InlineKeyboardButton {
-	return cb(text, data, style)
+// CBButton builds a callback inline button.
+func CBButton(text, data string) td.InlineKeyboardButton {
+	return cbBtn(text, data)
 }
 
-func randomStyles() [3]gotdbot.ButtonStyle {
-	st := [3]gotdbot.ButtonStyle{
-		gotdbot.ButtonStylePrimary{},
-		gotdbot.ButtonStyleSuccess{},
-		gotdbot.ButtonStyleDanger{},
-	}
+func randomStyles() [3]string {
+	st := [3]string{"primary", "success", "danger"}
 	rand.Shuffle(len(st), func(i, j int) { st[i], st[j] = st[j], st[i] })
 	return st
 }
@@ -75,37 +67,41 @@ func ProgressBar(played, total int32) string {
 	return fmt.Sprintf("%s %s %s", SecToMin(played), b.String(), SecToMin(total))
 }
 
-// PanelButtons is the now-playing keyboard.
-// Layout: progress / Replay, Pause|Resume, Skip / Queue · N, End Queue / Autoplay.
-// queue is the number of tracks waiting after the current one.
-func PanelButtons(mode string, played, total int32, queue int, autoplay bool) *gotdbot.ReplyMarkupInlineKeyboard {
-	progress := cb(ProgressBar(played, total), "play_progress", gotdbot.ButtonStyleDefault{})
-
-	replay := cb("↺ Replay", "play_replay", gotdbot.ButtonStyleSuccess{})
-	toggle := cb("II Pause", "play_pause", gotdbot.ButtonStylePrimary{})
+// PanelButtons builds the now-playing inline keyboard.
+func PanelButtons(chatID int64, mode string, played, total int32, queue int, autoplay bool) *td.ReplyMarkupInlineKeyboard {
+	toggleText := "II Pause"
+	toggleData := fmt.Sprintf("admin_pause:%d", chatID)
 	if mode == "pause" {
-		toggle = cb("▷ Resume", "play_resume", gotdbot.ButtonStylePrimary{})
+		toggleText = "▷ Resume"
+		toggleData = fmt.Sprintf("admin_resume:%d", chatID)
 	}
-	skip := cb("» Skip", "play_skip", gotdbot.ButtonStylePrimary{})
 
 	if queue < 0 {
 		queue = 0
 	}
-	queueBtn := cb(fmt.Sprintf("☰ Queue · %d", queue), "play_queue", gotdbot.ButtonStylePrimary{})
-	endBtn := cb("▢ End Queue", "play_stop", gotdbot.ButtonStyleDanger{})
 
 	apText := "Autoplay: Off"
 	if autoplay {
 		apText = "Autoplay: On"
 	}
-	ap := cb(apText, "play_autoplay", gotdbot.ButtonStyleDefault{})
 
-	return &gotdbot.ReplyMarkupInlineKeyboard{
-		Rows: [][]gotdbot.InlineKeyboardButton{
-			{progress},
-			{replay, toggle, skip},
-			{queueBtn, endBtn},
-			{ap},
+	return &td.ReplyMarkupInlineKeyboard{
+		Rows: [][]td.InlineKeyboardButton{
+			{
+				cbBtn(ProgressBar(played, total), "get_timer"),
+			},
+			{
+				cbBtn("↺ Replay", fmt.Sprintf("admin_replay:%d", chatID)),
+				cbBtn(toggleText, toggleData),
+				cbBtn("» Skip", fmt.Sprintf("admin_skip:%d", chatID)),
+			},
+			{
+				cbBtn(fmt.Sprintf("☰ Queue · %d", queue), fmt.Sprintf("play_queue:%d", chatID)),
+				cbBtn("▢ End Queue", fmt.Sprintf("admin_stop:%d", chatID)),
+			},
+			{
+				cbBtn(apText, fmt.Sprintf("admin_autoplay:%d", chatID)),
+			},
 		},
 	}
 }
@@ -124,8 +120,6 @@ const (
 	footerLine2   = "ꜱɪᴛ ʙᴀᴄᴋ, ʀᴇʟᴀx &amp; ᴇɴᴊᴏʏ ᴛʜᴇ ᴍᴜꜱɪᴄ"
 )
 
-// panelHTML renders the card: header, track info, footer.
-// header is plain small-caps text, extra an optional plain note.
 func panelHTML(img, header, title, link, duration, requestedBy, extra string) string {
 	var b strings.Builder
 	if img != "" {
@@ -147,20 +141,4 @@ func panelHTML(img, header, title, link, duration, requestedBy, extra string) st
 // RenderPlayPanelText is the fallback card when no track information is available.
 func RenderPlayPanelText(title, link, duration, requestedBy string) string {
 	return panelHTML("", headerPlaying, title, link, duration, requestedBy, "")
-}
-
-// NowPlayingHTML builds the now-playing panel (rich message HTML).
-// status is small-caps text; "now playing" style statuses show the
-// "music is playing" header, anything else (paused, muted…) is shown as is.
-// extra is an optional plain note.
-func NowPlayingHTML(song *PlayerCache, status, extra string) string {
-	if song == nil {
-		return RenderPlayPanelText("Unknown Track", "https://t.me", "0:00", "Unknown")
-	}
-	header := status
-	if status == "" || status == SC("now playing") || status == SC("streaming started | enjoy music") {
-		header = headerPlaying
-	}
-	img := config.ImgOr(config.PlayImg, song.Thumbnail)
-	return panelHTML(img, header, shorten(song.Name, 60), song.URL, SecToMin(song.Duration), song.User, extra)
 }
