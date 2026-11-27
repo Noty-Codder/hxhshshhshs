@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	defaultDBName         = "Anon"
+	defaultDBName         = "anon"
 	defaultAPIURL         = "https://www.riteshyt.in"
 	defaultService        = "youtube"
 	defaultDownloadsDir   = "downloads"
