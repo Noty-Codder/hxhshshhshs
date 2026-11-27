@@ -71,4 +71,15 @@ func PanelButtons(mode string, played int32, duration int32, autoplay bool) *td.
 	}
 
 	return &td.ReplyMarkupInlineKeyboard{
-		Rows: [][]td.Inline
+		Rows: [][]td.InlineKeyboardButton{
+			{
+				{Text: SC("skip"), Type: &td.InlineKeyboardButtonTypeCallback{Data: []byte("play_skip")}},
+				{Text: midBtnText, Type: &td.InlineKeyboardButtonTypeCallback{Data: []byte(midBtnData)}},
+				{Text: SC("stop"), Type: &td.InlineKeyboardButtonTypeCallback{Data: []byte("play_stop")}},
+			},
+			{
+				{Text: autoLabel, Type: &td.InlineKeyboardButtonTypeCallback{Data: []byte("play_autoplay")}},
+			},
+		},
+	}
+}
