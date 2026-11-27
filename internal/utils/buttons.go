@@ -12,24 +12,6 @@ type InlineButtonSpec struct {
 	Style        string
 }
 
-func url(text, link string, _ td.ButtonStyle) td.InlineKeyboardButton {
-	return td.InlineKeyboardButton{
-		Text: text,
-		Type: &td.InlineKeyboardButtonTypeUrl{
-			Url: link,
-		},
-	}
-}
-
-func cb(text, data string, _ td.ButtonStyle) td.InlineKeyboardButton {
-	return td.InlineKeyboardButton{
-		Text: text,
-		Type: &td.InlineKeyboardButtonTypeCallback{
-			Data: []byte(data),
-		},
-	}
-}
-
 func PlayPanelButtons(chatID int64, played, total, bar string, autoplayOn bool) [][]InlineButtonSpec {
 	autoplayText := "ᴀᴜᴛᴏᴘʟᴀʏ: ᴏꜰꜰ"
 	if autoplayOn {
