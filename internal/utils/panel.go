@@ -11,6 +11,22 @@ import (
 	"github.com/AshokShau/gotdbot"
 )
 
+func url(text, link string, style gotdbot.ButtonStyle) gotdbot.InlineKeyboardButton {
+	return gotdbot.InlineKeyboardButton{
+		Text:  text,
+		URL:   link,
+		Style: style,
+	}
+}
+
+func cb(text, data string, style gotdbot.ButtonStyle) gotdbot.InlineKeyboardButton {
+	return gotdbot.InlineKeyboardButton{
+		Text:  text,
+		Data:  []byte(data), // Agar gotdbot mein string field hai to `Data: data` kar dein
+		Style: style,
+	}
+}
+
 // URLButton builds a URL inline button.
 func URLButton(text, link string) gotdbot.InlineKeyboardButton {
 	return url(text, link, gotdbot.ButtonStylePrimary{})
