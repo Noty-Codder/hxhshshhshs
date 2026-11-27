@@ -6,6 +6,8 @@ import (
 	"math/rand/v2"
 	"strings"
 
+	"istkharmusic/internal/config"
+
 	td "github.com/AshokShau/gotdbot"
 )
 
@@ -67,12 +69,12 @@ func ProgressBar(played, total int32) string {
 	return fmt.Sprintf("%s %s %s", SecToMin(played), b.String(), SecToMin(total))
 }
 
-// PanelButtons builds the now-playing inline keyboard.
+// PanelButtons builds the now-playing inline keyboard matching internal/messaging/panel.go.
 func PanelButtons(chatID int64, mode string, played, total int32, queue int, autoplay bool) *td.ReplyMarkupInlineKeyboard {
-	toggleText := "II Pause"
+	toggleText := "II ᴘᴀᴜꜱᴇ"
 	toggleData := fmt.Sprintf("admin_pause:%d", chatID)
 	if mode == "pause" {
-		toggleText = "▷ Resume"
+		toggleText = "▷ ʀᴇꜱᴜᴍᴇ"
 		toggleData = fmt.Sprintf("admin_resume:%d", chatID)
 	}
 
@@ -80,9 +82,9 @@ func PanelButtons(chatID int64, mode string, played, total int32, queue int, aut
 		queue = 0
 	}
 
-	apText := "Autoplay: Off"
+	apText := "ᴀᴜᴛᴏᴘʟᴀʏ: ᴏꜰꜰ"
 	if autoplay {
-		apText = "Autoplay: On"
+		apText = "ᴀᴜᴛᴏᴘʟᴀʏ: ᴏɴ"
 	}
 
 	return &td.ReplyMarkupInlineKeyboard{
@@ -91,16 +93,37 @@ func PanelButtons(chatID int64, mode string, played, total int32, queue int, aut
 				cbBtn(ProgressBar(played, total), "get_timer"),
 			},
 			{
-				cbBtn("↺ Replay", fmt.Sprintf("admin_replay:%d", chatID)),
+				cbBtn("↺ ʀᴇᴘʟᴀʏ", fmt.Sprintf("admin_replay:%d", chatID)),
 				cbBtn(toggleText, toggleData),
-				cbBtn("» Skip", fmt.Sprintf("admin_skip:%d", chatID)),
+				cbBtn("» ꜱᴋɪᴘ", fmt.Sprintf("admin_skip:%d", chatID)),
 			},
 			{
-				cbBtn(fmt.Sprintf("☰ Queue · %d", queue), fmt.Sprintf("play_queue:%d", chatID)),
-				cbBtn("▢ End Queue", fmt.Sprintf("admin_stop:%d", chatID)),
+				cbBtn(fmt.Sprintf("☰ ǫᴜᴇᴜᴇ · %d", queue), fmt.Sprintf("play_queue:%d", chatID)),
+				cbBtn("▢ ᴇɴᴅ ǫᴜᴇᴜᴇ", fmt.Sprintf("admin_stop:%d", chatID)),
 			},
 			{
 				cbBtn(apText, fmt.Sprintf("admin_autoplay:%d", chatID)),
+			},
+		},
+	}
+}
+
+// ControlButtons builds compact playback control buttons for panels.
+func ControlButtons(chatID int64, paused bool) *td.ReplyMarkupInlineKeyboard {
+	toggleText := "II ᴘᴀᴜꜱᴇ"
+	toggleData := fmt.Sprintf("admin_pause:%d", chatID)
+	if paused {
+		toggleText = "▷ ʀᴇꜱᴜᴍᴇ"
+		toggleData = fmt.Sprintf("admin_resume:%d", chatID)
+	}
+
+	return &td.ReplyMarkupInlineKeyboard{
+		Rows: [][]td.InlineKeyboardButton{
+			{
+				cbBtn("↺ ʀᴇᴘʟᴀʏ", fmt.Sprintf("admin_replay:%d", chatID)),
+				cbBtn(toggleText, toggleData),
+				cbBtn("» ꜱᴋɪᴘ", fmt.Sprintf("admin_skip:%d", chatID)),
+				cbBtn("▢ ᴇɴᴅ ǫᴜᴇᴜᴇ", fmt.Sprintf("admin_stop:%d", chatID)),
 			},
 		},
 	}
@@ -141,4 +164,17 @@ func panelHTML(img, header, title, link, duration, requestedBy, extra string) st
 // RenderPlayPanelText is the fallback card when no track information is available.
 func RenderPlayPanelText(title, link, duration, requestedBy string) string {
 	return panelHTML("", headerPlaying, title, link, duration, requestedBy, "")
+}
+
+// NowPlayingHTML builds the now-playing panel HTML.
+func NowPlayingHTML(song *PlayerCache, status, extra string) string {
+	if song == nil {
+		return RenderPlayPanelText("Unknown Track", "https://t.me", "0:00", "Unknown")
+	}
+	header := status
+	if status == "" || status == SC("now playing") || status == SC("streaming started | enjoy music") {
+		header = headerPlaying
+	}
+	img := config.ImgOr(config.PlayImg, song.Thumbnail)
+	return panelHTML(img, header, shorten(song.Name, 60), song.URL, SecToMin(song.Duration), song.User, extra)
 }
