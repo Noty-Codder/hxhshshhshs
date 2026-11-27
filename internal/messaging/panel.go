@@ -3,6 +3,8 @@ package messaging
 import (
 	"fmt"
 	"strings"
+
+	td "github.com/AshokShau/gotdbot"
 )
 
 func escapeHTML(s string) string {
@@ -28,4 +30,30 @@ func RenderPlayPanelText(title, url, duration, requestedBy string) string {
 
 🎶 ʏᴏᴜʀ ᴛʀᴀᴄᴋ ɪꜱ ɴᴏᴡ ᴘʟᴀʏɪɴɢ
 🔊 ꜱɪᴛ ʙᴀᴄᴋ, ʀᴇʟᴀx & ᴇɴᴊᴏʏ ᴛʜᴇ ᴍᴜꜱɪᴄ</blockquote>`, safeURL, safeTitle, duration, safeBy)
+}
+
+func FinishProgress(c *td.Client, msg *td.Message, text string, opts *td.EditMessageTextOpts, silent bool) (*td.Message, error) {
+	if msg == nil {
+		return nil, nil
+	}
+	if opts == nil {
+		opts = &td.EditMessageTextOpts{
+			ParseMode:             "HTML",
+			DisableWebPagePreview: true,
+		}
+	} else if opts.ParseMode == "" {
+		opts.ParseMode = "HTML"
+	}
+	return msg.EditText(c, text, opts)
+}
+
+func SendPanel(c *td.Client, updater *td.Message, track interface{}, silent bool) (*td.Message, error) {
+	if updater == nil {
+		return nil, nil
+	}
+	text := RenderPlayPanelText("Music Track", "https://t.me", "0:00", "User")
+	return updater.EditText(c, text, &td.EditMessageTextOpts{
+		ParseMode:             "HTML",
+		DisableWebPagePreview: true,
+	})
 }
