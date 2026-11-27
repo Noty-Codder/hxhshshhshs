@@ -85,11 +85,7 @@ func (y *youTubeData) getInfo() (*utils.PlatformTracks, error) {
 			res, perr = getYouTubePlaylist(ctx, playlistID)
 		}
 		if (perr != nil || res == nil || len(res.Results) == 0) && riteshReady() {
-			limit := config.QueueLimit
-			if limit <= 0 {
-				limit = 25
-			}
-			if tr, err := riteshPlaylist(y.Query, limit); err == nil {
+			if tr, err := riteshPlaylist(y.Query, 25); err == nil {
 				return &utils.PlatformTracks{Results: tr}, nil
 			}
 		}
