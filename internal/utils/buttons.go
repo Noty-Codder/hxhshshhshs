@@ -1,246 +1,62 @@
-/*
-  * IstkharMusic - Telegram Music Bot (by TEAM-ISTKHAR)
- *  Copyright (c) 2025-2026 Ashok Shau
- *
- *  Licensed under GNU GPL v3
- *  See https://github.com/TEAM-ISTKHAR/IstkharMusic
- */
-
 package utils
 
-import (
-	"istkharmusic/internal/config"
-	"crypto/sha256"
-	"encoding/base64"
-	"fmt"
+import "fmt"
 
-	"github.com/AshokShau/gotdbot"
-)
-
-func cb(text, data string, style gotdbot.ButtonStyle) gotdbot.InlineKeyboardButton {
-	return gotdbot.InlineKeyboardButton{
-		Text: text,
-		Type: &gotdbot.InlineKeyboardButtonTypeCallback{
-			Data: []byte(data),
-		},
-		Style: style,
-	}
+type InlineButtonSpec struct {
+	Text         string
+	CallbackData string
+	Style        string
 }
 
-func url(text, link string, style gotdbot.ButtonStyle) gotdbot.InlineKeyboardButton {
-	return gotdbot.InlineKeyboardButton{
-		Text: text,
-		Type: &gotdbot.InlineKeyboardButtonTypeUrl{
-			Url: link,
-		},
-		Style: style,
-	}
-}
-
-var CloseBtn = cb(SC("close"), "vcplay_close", gotdbot.ButtonStyleDanger{})
-var HomeBtn = cb("🏠 "+SC("home"), "help_back", gotdbot.ButtonStylePrimary{})
-var HelpBtn = cb(SC("help"), "help_all", gotdbot.ButtonStyleDefault{})
-var UserBtn = cb("Users", "help_user", gotdbot.ButtonStyleDefault{})
-var AdminBtn = cb("Admins", "help_admin", gotdbot.ButtonStyleDefault{})
-var OwnerBtn = cb("Owner", "help_owner", gotdbot.ButtonStyleDefault{})
-var DevsBtn = cb("Devs", "help_devs", gotdbot.ButtonStyleDefault{})
-var PlaylistBtn = cb("Playlist", "help_playlist", gotdbot.ButtonStyleDefault{})
-var AutoplayBtn = cb("Autoplay", "help_autoplay", gotdbot.ButtonStyleDefault{})
-
-var channelBtn = url(SC("updates"), config.SupportChannel, gotdbot.ButtonStyleDefault{})
-var groupBtn = url(SC("support"), config.SupportGroup, gotdbot.ButtonStyleDefault{})
-
-func SupportKeyboard() *gotdbot.ReplyMarkupInlineKeyboard {
-	return &gotdbot.ReplyMarkupInlineKeyboard{
-		Rows: [][]gotdbot.InlineKeyboardButton{
-			{channelBtn, groupBtn},
-			{CloseBtn},
-		},
-	}
-}
-
-func SupportBtn() *gotdbot.ReplyMarkupInlineKeyboard {
-	return &gotdbot.ReplyMarkupInlineKeyboard{
-		Rows: [][]gotdbot.InlineKeyboardButton{
-			{channelBtn, groupBtn},
-		},
-	}
-}
-
-func SettingsKeyboard(playMode, adminMode string, cmdDelete bool, language string, autoplay bool) *gotdbot.ReplyMarkupInlineKeyboard {
-	playText := "Everyone"
-	if playMode == Admins {
-		playText = "Admins"
+func PlayPanelButtons(chatID int64, played, total, bar string, autoplayOn bool) [][]InlineButtonSpec {
+	autoplayText := "ᴀᴜᴛᴏᴘʟᴀʏ: ᴏꜰꜰ"
+	if autoplayOn {
+		autoplayText = "ᴀᴜᴛᴏᴘʟᴀʏ: ᴏɴ"
 	}
 
-	deleteText := "False"
-	if cmdDelete {
-		deleteText = "True"
-	}
-
-	adminText := "Everyone"
-	if adminMode == Admins {
-		adminText = "Admins"
-	}
-
-	langText := "English"
-	if language != "en" && language != "" {
-		langText = language
-	}
-
-	autoplayText := "Disabled"
-	if autoplay {
-		autoplayText = "Enabled"
-	}
-
-	return &gotdbot.ReplyMarkupInlineKeyboard{
-		Rows: [][]gotdbot.InlineKeyboardButton{
+	return [][]InlineButtonSpec{
+		{
 			{
-				cb("Play Mode ➜", "settings_main", gotdbot.ButtonStyleDefault{}),
-				cb(playText, "settings_play", gotdbot.ButtonStyleDefault{}),
+				Text:         fmt.Sprintf("%s %s %s", played, bar, total),
+				CallbackData: "get_timer",
+				Style:        "primary",
+			},
+		},
+		{
+			{
+				Text:         "↺ ʀᴇᴘʟᴀʏ",
+				CallbackData: fmt.Sprintf("admin_replay:%d", chatID),
+				Style:        "success",
 			},
 			{
-				cb("Command Delete ➜", "settings_main", gotdbot.ButtonStyleDefault{}),
-				cb(deleteText, "settings_delete", gotdbot.ButtonStyleDefault{}),
+				Text:         "II ᴘᴀᴜꜱᴇ",
+				CallbackData: fmt.Sprintf("admin_pause:%d", chatID),
+				Style:        "primary",
 			},
 			{
-				cb("Admin Mode ➜", "settings_main", gotdbot.ButtonStyleDefault{}),
-				cb(adminText, "settings_admin", gotdbot.ButtonStyleDefault{}),
+				Text:         "» ꜱᴋɪᴘ",
+				CallbackData: fmt.Sprintf("admin_skip:%d", chatID),
+				Style:        "primary",
+			},
+		},
+		{
+			{
+				Text:         "✚ ᴘʟᴀʏʟɪꜱᴛ",
+				CallbackData: fmt.Sprintf("add_playlist:%d", chatID),
+				Style:        "primary",
 			},
 			{
-				cb("Autoplay ➜", "settings_main", gotdbot.ButtonStyleDefault{}),
-				cb(autoplayText, "settings_autoplay", gotdbot.ButtonStyleDefault{}),
+				Text:         "▢ ᴇɴᴅ ǫᴜᴇᴜᴇ",
+				CallbackData: fmt.Sprintf("admin_stop:%d", chatID),
+				Style:        "danger",
 			},
+		},
+		{
 			{
-				cb("Language ➜", "settings_main", gotdbot.ButtonStyleDefault{}),
-				cb(langText, "settings_lang", gotdbot.ButtonStyleDefault{}),
+				Text:         autoplayText,
+				CallbackData: fmt.Sprintf("admin_autoplay:%d", chatID),
+				Style:        "",
 			},
-			{CloseBtn},
 		},
 	}
-}
-
-func hb(label, data string) gotdbot.InlineKeyboardButton {
-	return cb(SC(label), data, gotdbot.ButtonStyleDefault{})
-}
-
-func HelpMenuKeyboard() *gotdbot.ReplyMarkupInlineKeyboard {
-	return &gotdbot.ReplyMarkupInlineKeyboard{
-		Rows: [][]gotdbot.InlineKeyboardButton{
-			{hb("admins", "help_admin"), hb("auth", "help_auth"), hb("blacklist", "help_blacklist")},
-			{hb("language", "help_language"), hb("ping", "help_ping"), hb("play", "help_play")},
-			{hb("stats", "help_stats"), hb("sudoers", "help_sudoers"), hb("autoplay", "help_autoplay")},
-			{hb("vc logger", "help_vclogger"), hb("loop", "help_loop"), hb("playlist", "help_playlist")},
-			{hb("restrictor", "help_restrictor"), hb("approve", "help_approve")},
-			{HomeBtn, CloseBtn},
-		},
-	}
-}
-
-func BackHelpMenuKeyboard() *gotdbot.ReplyMarkupInlineKeyboard {
-	return &gotdbot.ReplyMarkupInlineKeyboard{
-		Rows: [][]gotdbot.InlineKeyboardButton{
-			{HelpBtn, HomeBtn},
-			{CloseBtn},
-		},
-	}
-}
-
-func ControlButtons(mode string) *gotdbot.ReplyMarkupInlineKeyboard {
-	skipBtn := cb("‣‣I", "play_skip", gotdbot.ButtonStyleDefault{})
-	stopBtn := cb("▢", "play_stop", gotdbot.ButtonStyleDefault{})
-	pauseBtn := cb("II", "play_pause", gotdbot.ButtonStyleDefault{})
-	resumeBtn := cb("▷", "play_resume", gotdbot.ButtonStyleDefault{})
-	muteBtn := cb("🔇", "play_mute", gotdbot.ButtonStyleDefault{})
-	unmuteBtn := cb("🔊", "play_unmute", gotdbot.ButtonStyleDefault{})
-	addToPlaylistBtn := cb("➕", "play_add_to_list", gotdbot.ButtonStylePrimary{})
-
-	switch mode {
-
-	case "play":
-		return &gotdbot.ReplyMarkupInlineKeyboard{
-			Rows: [][]gotdbot.InlineKeyboardButton{
-				{skipBtn, stopBtn, pauseBtn},
-				{addToPlaylistBtn, CloseBtn},
-			},
-		}
-
-	case "pause":
-		return &gotdbot.ReplyMarkupInlineKeyboard{
-			Rows: [][]gotdbot.InlineKeyboardButton{
-				{skipBtn, stopBtn, resumeBtn},
-				{CloseBtn},
-			},
-		}
-
-	case "resume":
-		return &gotdbot.ReplyMarkupInlineKeyboard{
-			Rows: [][]gotdbot.InlineKeyboardButton{
-				{skipBtn, stopBtn, pauseBtn},
-				{CloseBtn},
-			},
-		}
-
-	case "mute":
-		return &gotdbot.ReplyMarkupInlineKeyboard{
-			Rows: [][]gotdbot.InlineKeyboardButton{
-				{skipBtn, stopBtn, unmuteBtn},
-				{CloseBtn},
-			},
-		}
-
-	case "unmute":
-		return &gotdbot.ReplyMarkupInlineKeyboard{
-			Rows: [][]gotdbot.InlineKeyboardButton{
-				{skipBtn, stopBtn, muteBtn},
-				{CloseBtn},
-			},
-		}
-
-	default:
-		return &gotdbot.ReplyMarkupInlineKeyboard{
-			Rows: [][]gotdbot.InlineKeyboardButton{
-				{CloseBtn},
-			},
-		}
-	}
-}
-
-func AddMeMarkup(username string) *gotdbot.ReplyMarkupInlineKeyboard {
-	addMeBtn := url(
-		"➕ "+SC("add me to your group"),
-		fmt.Sprintf("https://t.me/%s?startgroup=true", username),
-		gotdbot.ButtonStylePrimary{},
-	)
-
-	return &gotdbot.ReplyMarkupInlineKeyboard{
-		Rows: [][]gotdbot.InlineKeyboardButton{
-			{addMeBtn},
-			{HelpBtn},
-			{channelBtn, groupBtn},
-		},
-	}
-}
-
-func PlayNowButton(trackID string) gotdbot.InlineKeyboardButton {
-	return cb(SC("play now"), PlayNowCallbackData(trackID), gotdbot.ButtonStyleDanger{})
-}
-
-func QueueMarkup(trackID string) *gotdbot.ReplyMarkupInlineKeyboard {
-	return &gotdbot.ReplyMarkupInlineKeyboard{
-		Rows: [][]gotdbot.InlineKeyboardButton{
-			{PlayNowButton(trackID), CloseBtn},
-		},
-	}
-}
-
-// PlayNowCallbackData keeps Telegram remote file IDs within the 64-byte callback
-// limit without changing the original IDs needed for downloading queued files.
-func PlayNowCallbackData(trackID string) string {
-	data := "play_now_" + trackID
-	if len(data) <= 64 {
-		return data
-	}
-	hash := sha256.Sum256([]byte(trackID))
-	return "play_now_hash_" + base64.RawURLEncoding.EncodeToString(hash[:])
 }
