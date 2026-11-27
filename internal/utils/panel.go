@@ -13,16 +13,20 @@ import (
 
 func url(text, link string, style gotdbot.ButtonStyle) gotdbot.InlineKeyboardButton {
 	return gotdbot.InlineKeyboardButton{
-		Text:  text,
-		URL:   link,
+		Text: text,
+		Type: &gotdbot.InlineKeyboardButtonTypeUrl{
+			Url: link,
+		},
 		Style: style,
 	}
 }
 
 func cb(text, data string, style gotdbot.ButtonStyle) gotdbot.InlineKeyboardButton {
 	return gotdbot.InlineKeyboardButton{
-		Text:  text,
-		Data:  []byte(data), // Agar gotdbot mein string field hai to `Data: data` kar dein
+		Text: text,
+		Type: &gotdbot.InlineKeyboardButtonTypeCallback{
+			Data: []byte(data),
+		},
 		Style: style,
 	}
 }
