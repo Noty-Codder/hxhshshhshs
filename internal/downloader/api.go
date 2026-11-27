@@ -14,7 +14,6 @@ import (
 	"regexp"
 	"strings"
 
-	"istkharmusic/internal/config"
 	"istkharmusic/internal/utils"
 )
 
@@ -51,11 +50,7 @@ func (a *apiData) getInfo() (*utils.PlatformTracks, error) {
 			}
 			return &utils.PlatformTracks{Results: []utils.GetUrlTrack{*t}}, nil
 		}
-		limit := config.QueueLimit
-		if limit <= 0 {
-			limit = 25
-		}
-		tracks, err := riteshPlaylist(a.Query, limit)
+		tracks, err := riteshPlaylist(a.Query, 25)
 		if err != nil {
 			return nil, err
 		}
