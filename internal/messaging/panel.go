@@ -32,21 +32,6 @@ func RenderPlayPanelText(title, url, duration, requestedBy string) string {
 🔊 ꜱɪᴛ ʙᴀᴄᴋ, ʀᴇʟᴀx & ᴇɴᴊᴏʏ ᴛʜᴇ ᴍᴜꜱɪᴄ</blockquote>`, safeURL, safeTitle, duration, safeBy)
 }
 
-func FinishProgress(c *td.Client, msg *td.Message, text string, opts *td.EditMessageTextOpts, silent bool) (*td.Message, error) {
-	if msg == nil {
-		return nil, nil
-	}
-	if opts == nil {
-		opts = &td.EditMessageTextOpts{
-			ParseMode:             "HTML",
-			DisableWebPagePreview: true,
-		}
-	} else if opts.ParseMode == "" {
-		opts.ParseMode = "HTML"
-	}
-	return msg.EditText(c, text, opts)
-}
-
 func SendPanel(c *td.Client, updater *td.Message, track interface{}, silent bool) (*td.Message, error) {
 	if updater == nil {
 		return nil, nil
